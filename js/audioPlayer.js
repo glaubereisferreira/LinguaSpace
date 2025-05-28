@@ -21,6 +21,22 @@ export class AudioPlayer {
         this.timeUpdateThrottle = null;
         this.timeUpdateDelay = 50; // CRITICAL FIX: Reduced from 100ms to 50ms for short words
         
+        // CRITICAL FIX: Add range request diagnostics
+        this.audio.addEventListener('loadedmetadata', () => {
+            console.log('🔍 Audio metadata loaded - checking seekability...');
+            console.log(`📊 Duration: ${this.audio.duration}s`);
+            console.log(`📡 Network state: ${this.audio.networkState}`);
+            console.log(`📥 Ready state: ${this.audio.readyState}`);
+            
+            if (this.audio.seekable.length > 0) {
+                console.log(`✅ Seekable range: ${this.audio.seekable.start(0)} - ${this.audio.seekable.end(0)}`);
+                console.log('✅ Server supports range requests');
+            } else {
+                console.warn('⚠️ Audio não é seekable! Possível problema com range requests.');
+                console.warn('💡 Solução: Use "python -m http.server 8000 --bind localhost"');
+            }
+        });
+        
         this.setupEventListeners();
         
         if (this.audio.readyState === 0) {
@@ -140,10 +156,10 @@ export class AudioPlayer {
             console.error('❌ [SEEKABLE] Error checking seekable ranges:', error);
             return false;
         }
-    }
-
-    // OPTIMIZATION: Remove server check for each seek
+    }    // CRITICAL FIX: Robust seek with range request validation
     async seek(time) {
+        console.log(`\n=== SEEK to ${time}s ===`);
+        
         const numTime = Number(time);
         if (isNaN(numTime) || !isFinite(numTime)) {
             console.error(`❌ [SEEK] Invalid time: ${time}`);
@@ -157,22 +173,76 @@ export class AudioPlayer {
         }
         
         const clampedTime = Math.max(0, Math.min(numTime, duration));
+        console.log(`Seeking from ${this.audio.currentTime}s to ${clampedTime}s`);
         
+        // Aguarda o áudio estar pronto
         if (this.audio.readyState < 2) {
+            console.log('⏳ Aguardando áudio carregar...');
             await new Promise(resolve => {
                 const handler = () => {
-                    this.audio.removeEventListener('loadeddata', handler);
+                    this.audio.removeEventListener('canplay', handler);
                     resolve();
                 };
-                this.audio.addEventListener('loadeddata', handler);
+                this.audio.addEventListener('canplay', handler, { once: true });
             });
         }
         
+        // Verifica se o áudio é seekable
+        if (this.audio.seekable.length === 0) {
+            console.error('❌ Áudio não é seekable! O servidor deve suportar range requests.');
+            console.error('💡 Tente usar: python -m http.server 8000 --bind localhost');
+            return;
+        } else {
+            console.log(`✅ Seekable range: ${this.audio.seekable.start(0)} - ${this.audio.seekable.end(0)}`);
+        }
+        
+        // Pausa antes do seek (às vezes ajuda com range requests)
+        const wasPlaying = !this.audio.paused;
+        if (wasPlaying) {
+            this.audio.pause();
+        }
+        
         try {
+            // Faz o seek
             this.audio.currentTime = clampedTime;
+            
+            // Aguarda o seek completar
+            await new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 20; // 1 segundo total
+                
+                const checkSeek = () => {
+                    attempts++;
+                    const currentTime = this.audio.currentTime;
+                    const timeDiff = Math.abs(currentTime - clampedTime);
+                    
+                    console.log(`Attempt ${attempts}: currentTime=${currentTime}, target=${clampedTime}, diff=${timeDiff}`);
+                    
+                    if (timeDiff < 0.5) { // Tolerância de 0.5s
+                        console.log(`✅ Seek sucesso: ${currentTime}s (target: ${clampedTime}s)`);
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        console.error(`❌ Seek falhou após ${maxAttempts} tentativas`);
+                        reject(new Error('Seek timeout'));
+                    } else {
+                        setTimeout(checkSeek, 50);
+                    }
+                };
+                
+                setTimeout(checkSeek, 50);
+            });
+            
+            // Resume se estava tocando
+            if (wasPlaying) {
+                await this.play();
+            }
+            
         } catch (error) {
             console.error('❌ [SEEK] Error during seek operation:', error);
         }
+        
+        console.log(`Final time: ${this.audio.currentTime}s`);
+        console.log(`=== END SEEK ===\n`);
     }
 
     async jump(seconds) {
