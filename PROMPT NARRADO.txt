@@ -1,0 +1,76 @@
+1. Visão geral
+Crie um aplicativo de aprendizagem de idiomas composto por um chatbot (usar Gemini 2.5 Flash via API) que coleta preferências do usuário, gera conteúdo sob demanda e oferece um player avançado que sincroniza áudio e texto palavra a palavra.
+
+2. Fluxo do usuário
+Página inicial – O usuário conversa com o chatbot.
+
+Coleta de preferências
+
+Idioma que está aprendendo.
+
+Tópico desejado.
+
+Formato do conteúdo: monólogo ou diálogo.
+
+Geração de conteúdo – O backend chama a API do Google para criar o texto (monólogo ou diálogo) conforme as preferências.
+
+Geração de áudio – Após o texto ser criado, o sistema sintetiza o áudio correspondente.
+
+Tela de estudo – Texto e áudio aparecem lado a lado, com todos os controles descritos abaixo.
+
+3. Funcionalidades da tela de estudo
+Highlight dinâmico: cada palavra é destacada no momento exato em que é pronunciada.
+
+Seek por clique: clicando em qualquer palavra, o áudio salta para o instante em que ela inicia.
+
+Recuo/avanço rápido: botões para –1 s, –3 s, –5 s, –10 s e +1 s, +3 s, +5 s, +10 s.
+
+Loop de frase: botão “Loop ativo” prende reprodução e highlight à frase atual, repetindo-a até o usuário desativar.
+
+Pop-up de vocabulário: seleção de palavra ou trecho abre janela com significado.
+
+Dicionário pessoal: usuário salva a palavra/expressão, atribui-lhe uma das 7 cores disponíveis; palavras salvas aparecem marcadas em textos futuros.
+
+Velocidades do player: 0,75 ×, 1 ×, 1,25 × e 1,5 ×.
+
+4. Arquivos provisórios (evitar custo de API)
+transcript.json – contém o texto segmentado.
+
+audio.mp3 – narração correspondente.
+Esses arquivos ficam na pasta do projeto e substituem temporariamente a chamada à API.
+
+5. Integração com a API Gemini 2.5 Flash (para a fase seguinte)
+Endpoint:
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=<GEMINI_API_KEY>
+
+Exemplo de payload (texto a ser gerado varia conforme preferências do usuário):
+
+json
+Copy
+Edit
+{
+  "contents": [
+    {
+      "parts": [
+        { "text": "Dialogue about cognitive science in English." }
+      ]
+    }
+  ]
+}
+Exemplos de uso em Python, JavaScript (Node), Go e Apps Script já estão listados para referência; basta substituir YOUR_API_KEY.
+
+6. Desafio técnico: sincronização texto-áudio
+Forced Alignment (backend)
+
+Gere um JSON contendo, para cada palavra, start_time e end_time.
+
+Frontend
+
+Carregue texto, áudio e JSON de timestamps.
+
+Em cada evento timeupdate do <audio>, destaque a palavra cujo intervalo engloba currentTime.
+
+Implementar click-to-seek, loop de frase, scroll automático e marcação de palavras usando esses mesmos timestamps.
+
+Ter o arquivo de alinhamento de palavras é a peça crítica; uma vez disponível, o restante é manipulação de DOM e controle do player de áudio.
+

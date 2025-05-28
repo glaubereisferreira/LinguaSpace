@@ -1,0 +1,496 @@
+<html>
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=Generator content="Microsoft Word 15 (filtered)">
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:Wingdings;
+	panose-1:5 0 0 0 0 0 0 0 0 0;}
+@font-face
+	{font-family:"MS Gothic";
+	panose-1:2 11 6 9 7 2 5 8 2 4;}
+@font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:Aptos;}
+@font-face
+	{font-family:"\@MS Gothic";
+	panose-1:2 11 6 9 7 2 5 8 2 4;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin-top:0cm;
+	margin-right:0cm;
+	margin-bottom:8.0pt;
+	margin-left:0cm;
+	line-height:115%;
+	font-size:12.0pt;
+	font-family:"Aptos",sans-serif;}
+.MsoChpDefault
+	{font-size:12.0pt;
+	font-family:"Aptos",sans-serif;}
+.MsoPapDefault
+	{margin-bottom:8.0pt;
+	line-height:115%;}
+@page WordSection1
+	{size:612.0pt 792.0pt;
+	margin:70.85pt 3.0cm 70.85pt 3.0cm;}
+div.WordSection1
+	{page:WordSection1;}
+ /* List Definitions */
+ ol
+	{margin-bottom:0cm;}
+ul
+	{margin-bottom:0cm;}
+-->
+</style>
+
+</head>
+
+<body lang=EN-US style='word-wrap:break-word'>
+
+<div class=WordSection1>
+
+<p class=MsoNormal>Based on your requirements and the JSON structure you've
+shown, here's a comprehensive technical prompt:</p>
+
+<div class=MsoNormal align=center style='text-align:center'>
+
+<hr size=2 width="100%" align=center>
+
+</div>
+
+<p class=MsoNormal><b>Interactive Podcast Study Tool - Technical Specification</b></p>
+
+<p class=MsoNormal><b>Project Overview</b></p>
+
+<p class=MsoNormal>Create a web-based interactive podcast study tool that synchronizes
+audio playback with word-level transcript highlighting, featuring click-to-seek
+functionality, playback controls, sentence looping, and a personal dictionary
+system with color-coded words.</p>
+
+<p class=MsoNormal><b>File Structure &amp; Location</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Project directory:
+     C:\Users\glaub\OneDrive\Documentos\000_teste\LinguaSpace</li>
+ <li class=MsoNormal>Audio file: preview_file.mp3</li>
+ <li class=MsoNormal>Transcript file: Books_Summary.json</li>
+ <li class=MsoNormal>Development environment: Visual Studio Code</li>
+</ul>
+
+<p class=MsoNormal><b>JSON Data Structure</b></p>
+
+<p class=MsoNormal>{</p>
+
+<p class=MsoNormal>  &quot;segments&quot;: [</p>
+
+<p class=MsoNormal>    {</p>
+
+<p class=MsoNormal>      &quot;text&quot;: &quot;Full sentence text&quot;,</p>
+
+<p class=MsoNormal>      &quot;words&quot;: [</p>
+
+<p class=MsoNormal>        {</p>
+
+<p class=MsoNormal>          &quot;text&quot;: &quot;word&quot;,</p>
+
+<p class=MsoNormal>          &quot;start&quot;: 0.079,</p>
+
+<p class=MsoNormal>          &quot;end&quot;: 0.219,</p>
+
+<p class=MsoNormal>          &quot;type&quot;: &quot;word&quot;,</p>
+
+<p class=MsoNormal>          &quot;speaker_id&quot;: &quot;Speaker 0&quot;,</p>
+
+<p class=MsoNormal>          &quot;characters&quot;: null</p>
+
+<p class=MsoNormal>        }</p>
+
+<p class=MsoNormal>      ]</p>
+
+<p class=MsoNormal>    }</p>
+
+<p class=MsoNormal>  ]</p>
+
+<p class=MsoNormal>}</p>
+
+<p class=MsoNormal><b>Core Architecture</b></p>
+
+<p class=MsoNormal><b>1. Project Structure</b></p>
+
+<p class=MsoNormal>LinguaSpace/</p>
+
+<p class=MsoNormal><span style='font-family:"MS Gothic"'>&#9500;</span>&#9472;&#9472;
+index.html</p>
+
+<p class=MsoNormal><span style='font-family:"MS Gothic"'>&#9500;</span>&#9472;&#9472;
+styles.css</p>
+
+<p class=MsoNormal><span style='font-family:"MS Gothic"'>&#9500;</span>&#9472;&#9472;
+js/</p>
+
+<p class=MsoNormal>&#9474;   <span style='font-family:"MS Gothic"'>&#9500;</span>&#9472;&#9472;
+app.js</p>
+
+<p class=MsoNormal>&#9474;   <span style='font-family:"MS Gothic"'>&#9500;</span>&#9472;&#9472;
+audioPlayer.js</p>
+
+<p class=MsoNormal>&#9474;   <span style='font-family:"MS Gothic"'>&#9500;</span>&#9472;&#9472;
+transcriptRenderer.js</p>
+
+<p class=MsoNormal>&#9474;   <span style='font-family:"MS Gothic"'>&#9500;</span>&#9472;&#9472;
+dictionary.js</p>
+
+<p class=MsoNormal>&#9474;   &#9492;&#9472;&#9472; utils.js</p>
+
+<p class=MsoNormal><span style='font-family:"MS Gothic"'>&#9500;</span>&#9472;&#9472;
+assets/</p>
+
+<p class=MsoNormal>&#9474;   <span style='font-family:"MS Gothic"'>&#9500;</span>&#9472;&#9472;
+preview_file.mp3</p>
+
+<p class=MsoNormal>&#9474;   &#9492;&#9472;&#9472; Books_Summary.json</p>
+
+<p class=MsoNormal>&#9492;&#9472;&#9472; data/</p>
+
+<p class=MsoNormal>    &#9492;&#9472;&#9472; dictionary.json</p>
+
+<p class=MsoNormal><b>2. HTML Structure</b></p>
+
+<p class=MsoNormal>&lt;!DOCTYPE html&gt;</p>
+
+<p class=MsoNormal>&lt;html&gt;</p>
+
+<p class=MsoNormal>&lt;head&gt;</p>
+
+<p class=MsoNormal>    &lt;title&gt;LinguaSpace - Interactive Podcast Study
+Tool&lt;/title&gt;</p>
+
+<p class=MsoNormal>    &lt;link rel=&quot;stylesheet&quot;
+href=&quot;styles.css&quot;&gt;</p>
+
+<p class=MsoNormal>&lt;/head&gt;</p>
+
+<p class=MsoNormal>&lt;body&gt;</p>
+
+<p class=MsoNormal>    &lt;div id=&quot;app&quot;&gt;</p>
+
+<p class=MsoNormal>        &lt;div id=&quot;transcript-container&quot;&gt;</p>
+
+<p class=MsoNormal>            &lt;div
+id=&quot;transcript-content&quot;&gt;&lt;/div&gt;</p>
+
+<p class=MsoNormal>        &lt;/div&gt;</p>
+
+<p class=MsoNormal>        &lt;div id=&quot;controls-panel&quot;&gt;</p>
+
+<p class=MsoNormal>            &lt;div id=&quot;audio-controls&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;audio
+id=&quot;audio-player&quot;&gt;&lt;/audio&gt;</p>
+
+<p class=MsoNormal>                &lt;!-- Playback controls here --&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>        &lt;/div&gt;</p>
+
+<p class=MsoNormal>    &lt;/div&gt;</p>
+
+<p class=MsoNormal>    &lt;script type=&quot;module&quot;
+src=&quot;js/app.js&quot;&gt;&lt;/script&gt;</p>
+
+<p class=MsoNormal>&lt;/body&gt;</p>
+
+<p class=MsoNormal>&lt;/html&gt;</p>
+
+<p class=MsoNormal><b>Detailed Implementation Requirements</b></p>
+
+<p class=MsoNormal><b>3. Core Features Implementation</b></p>
+
+<p class=MsoNormal><b>3.1 Dynamic Word Highlighting</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Track current playback time using audio.currentTime</li>
+ <li class=MsoNormal>Compare with word timestamps (start and end) from JSON</li>
+ <li class=MsoNormal>Apply light blue background (#ADD8E6) to current word</li>
+ <li class=MsoNormal>Remove highlight when word ends</li>
+ <li class=MsoNormal>Implement smooth auto-scrolling to keep current word
+     visible</li>
+</ul>
+
+<p class=MsoNormal><b>Implementation approach:</b></p>
+
+<p class=MsoNormal>class TranscriptHighlighter {</p>
+
+<p class=MsoNormal>    constructor(audioElement, transcriptData) {</p>
+
+<p class=MsoNormal>        this.audio = audioElement;</p>
+
+<p class=MsoNormal>        this.segments = transcriptData.segments;</p>
+
+<p class=MsoNormal>        this.currentWordIndex = 0;</p>
+
+<p class=MsoNormal>        this.wordElements = [];</p>
+
+<p class=MsoNormal>    }</p>
+
+<p class=MsoNormal>    </p>
+
+<p class=MsoNormal>    updateHighlight() {</p>
+
+<p class=MsoNormal>        const currentTime = this.audio.currentTime;</p>
+
+<p class=MsoNormal>        // Find current word based on timestamp</p>
+
+<p class=MsoNormal>        // Apply/remove highlighting</p>
+
+<p class=MsoNormal>        // Auto-scroll if needed</p>
+
+<p class=MsoNormal>    }</p>
+
+<p class=MsoNormal>}</p>
+
+<p class=MsoNormal><b>3.2 Click-to-Seek</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Add click event listeners to each word element</li>
+ <li class=MsoNormal>On click, set audio.currentTime to word's start timestamp</li>
+ <li class=MsoNormal>Update highlighting immediately</li>
+</ul>
+
+<p class=MsoNormal><b>3.3 Quick Navigation Controls</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Create buttons for: -10s, -5s, -3s, -1s, +1s, +3s, +5s,
+     +10s</li>
+ <li class=MsoNormal>Implement seek functionality with bounds checking</li>
+ <li class=MsoNormal>Visual feedback on button press</li>
+</ul>
+
+<p class=MsoNormal><b>3.4 Sentence Loop Feature</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Define sentence boundaries (between periods)</li>
+ <li class=MsoNormal>Toggle button for &quot;Loop Active&quot;</li>
+ <li class=MsoNormal>When active: </li>
+ <ul style='margin-top:0cm' type=circle>
+  <li class=MsoNormal>Identify current sentence boundaries</li>
+  <li class=MsoNormal>Set loop start/end points</li>
+  <li class=MsoNormal>Auto-restart at sentence beginning when reaching end</li>
+  <li class=MsoNormal>Add 1-second delay between loops</li>
+ </ul>
+</ul>
+
+<p class=MsoNormal><b>3.5 Personal Dictionary</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Right-click context menu on words</li>
+ <li class=MsoNormal>Color picker with 7 predefined colors: </li>
+ <ul style='margin-top:0cm' type=circle>
+  <li class=MsoNormal>Red (#FF6B6B)</li>
+  <li class=MsoNormal>Orange (#FFA500)</li>
+  <li class=MsoNormal>Yellow (#FFD700)</li>
+  <li class=MsoNormal>Green (#4CAF50)</li>
+  <li class=MsoNormal>Blue (#2196F3)</li>
+  <li class=MsoNormal>Purple (#9C27B0)</li>
+  <li class=MsoNormal>Pink (#FF69B4)</li>
+ </ul>
+ <li class=MsoNormal>Save to localStorage structure:</li>
+</ul>
+
+<p class=MsoNormal>{</p>
+
+<p class=MsoNormal>    &quot;dictionary&quot;: {</p>
+
+<p class=MsoNormal>        &quot;word&quot;: {</p>
+
+<p class=MsoNormal>            &quot;color&quot;: &quot;#FF6B6B&quot;,</p>
+
+<p class=MsoNormal>            &quot;addedDate&quot;: &quot;2024-01-15&quot;,</p>
+
+<p class=MsoNormal>            &quot;occurrences&quot;: []</p>
+
+<p class=MsoNormal>        }</p>
+
+<p class=MsoNormal>    }</p>
+
+<p class=MsoNormal>}</p>
+
+<p class=MsoNormal><b>3.6 Playback Speed Control</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Buttons for: 0.75×, 1×, 1.25×, 1.5×</li>
+ <li class=MsoNormal>Use audio.playbackRate property</li>
+ <li class=MsoNormal>Visual indicator of current speed</li>
+</ul>
+
+<p class=MsoNormal><b>4. UI/UX Specifications</b></p>
+
+<p class=MsoNormal><b>4.1 Layout</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Transcript area: 70% of viewport height</li>
+ <li class=MsoNormal>Control panel: Fixed bottom, 30% height</li>
+ <li class=MsoNormal>Responsive design for different screen sizes</li>
+</ul>
+
+<p class=MsoNormal><b>4.2 Transcript Display</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Font: Clean, readable (e.g., Inter, Roboto)</li>
+ <li class=MsoNormal>Line height: 1.8 for readability</li>
+ <li class=MsoNormal>Padding between segments</li>
+ <li class=MsoNormal>Smooth scrolling behavior</li>
+</ul>
+
+<p class=MsoNormal><b>4.3 Visual Feedback</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Hover effects on clickable words</li>
+ <li class=MsoNormal>Button press animations</li>
+ <li class=MsoNormal>Loading states</li>
+ <li class=MsoNormal>Error handling displays</li>
+</ul>
+
+<p class=MsoNormal><b>5. Technical Implementation Details</b></p>
+
+<p class=MsoNormal><b>5.1 State Management</b></p>
+
+<p class=MsoNormal>class AppState {</p>
+
+<p class=MsoNormal>    constructor() {</p>
+
+<p class=MsoNormal>        this.currentPodcast = null;</p>
+
+<p class=MsoNormal>        this.isLooping = false;</p>
+
+<p class=MsoNormal>        this.loopBoundaries = { start: 0, end: 0 };</p>
+
+<p class=MsoNormal>        this.playbackSpeed = 1;</p>
+
+<p class=MsoNormal>        this.dictionary = this.loadDictionary();</p>
+
+<p class=MsoNormal>    }</p>
+
+<p class=MsoNormal>}</p>
+
+<p class=MsoNormal><b>5.2 Event Handling</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Debounce scroll events</li>
+ <li class=MsoNormal>Throttle time update events (60fps max)</li>
+ <li class=MsoNormal>Proper cleanup on component unmount</li>
+</ul>
+
+<p class=MsoNormal><b>5.3 Performance Optimizations</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Virtual scrolling for long transcripts</li>
+ <li class=MsoNormal>Efficient DOM updates (batch operations)</li>
+ <li class=MsoNormal>RequestAnimationFrame for smooth animations</li>
+ <li class=MsoNormal>Lazy loading for multiple podcasts</li>
+</ul>
+
+<p class=MsoNormal><b>6. Multi-Podcast Support</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>File picker for loading new podcasts</li>
+ <li class=MsoNormal>Podcast library management</li>
+ <li class=MsoNormal>Shared dictionary across all podcasts</li>
+ <li class=MsoNormal>Progress tracking per podcast</li>
+</ul>
+
+<p class=MsoNormal><b>7. Error Handling</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Validate JSON structure on load</li>
+ <li class=MsoNormal>Handle missing timestamps gracefully</li>
+ <li class=MsoNormal>Audio loading errors</li>
+ <li class=MsoNormal>LocalStorage quota exceeded</li>
+</ul>
+
+<p class=MsoNormal><b>8. Browser Compatibility</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Target modern browsers (Chrome, Firefox, Safari, Edge)</li>
+ <li class=MsoNormal>Polyfills for older browser support if needed</li>
+ <li class=MsoNormal>Progressive enhancement approach</li>
+</ul>
+
+<p class=MsoNormal><b>Development Phases</b></p>
+
+<p class=MsoNormal><b>Phase 1: Core Functionality</b></p>
+
+<ol style='margin-top:0cm' start=1 type=1>
+ <li class=MsoNormal>Basic audio player with transcript display</li>
+ <li class=MsoNormal>Word-level highlighting sync</li>
+ <li class=MsoNormal>Click-to-seek implementation</li>
+</ol>
+
+<p class=MsoNormal><b>Phase 2: Enhanced Controls</b></p>
+
+<ol style='margin-top:0cm' start=1 type=1>
+ <li class=MsoNormal>Quick navigation buttons</li>
+ <li class=MsoNormal>Playback speed control</li>
+ <li class=MsoNormal>Sentence loop feature</li>
+</ol>
+
+<p class=MsoNormal><b>Phase 3: Dictionary System</b></p>
+
+<ol style='margin-top:0cm' start=1 type=1>
+ <li class=MsoNormal>Word selection and color coding</li>
+ <li class=MsoNormal>LocalStorage integration</li>
+ <li class=MsoNormal>Dictionary management UI</li>
+</ol>
+
+<p class=MsoNormal><b>Phase 4: Polish &amp; Optimization</b></p>
+
+<ol style='margin-top:0cm' start=1 type=1>
+ <li class=MsoNormal>Smooth animations and transitions</li>
+ <li class=MsoNormal>Performance optimizations</li>
+ <li class=MsoNormal>Multi-podcast support</li>
+ <li class=MsoNormal>Error handling and edge cases</li>
+</ol>
+
+<p class=MsoNormal><b>Testing Requirements</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Test with various podcast lengths (up to 20 minutes)</li>
+ <li class=MsoNormal>Different timestamp formats</li>
+ <li class=MsoNormal>Browser compatibility testing</li>
+ <li class=MsoNormal>Performance profiling</li>
+ <li class=MsoNormal>User experience testing</li>
+</ul>
+
+<p class=MsoNormal><b>Additional Considerations</b></p>
+
+<ul style='margin-top:0cm' type=disc>
+ <li class=MsoNormal>Keyboard shortcuts for power users</li>
+ <li class=MsoNormal>Export/import dictionary feature</li>
+ <li class=MsoNormal>Dark mode support</li>
+ <li class=MsoNormal>Mobile-responsive design</li>
+ <li class=MsoNormal>Accessibility features (ARIA labels, keyboard navigation)</li>
+</ul>
+
+<div class=MsoNormal align=center style='text-align:center'>
+
+<hr size=2 width="100%" align=center>
+
+</div>
+
+<p class=MsoNormal>This tool should provide an immersive language learning
+experience with precise audio-text synchronization and personalized vocabulary
+tracking across multiple podcasts.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+</div>
+
+</body>
+
+</html>

@@ -1,0 +1,39 @@
+# Node modules (se houver no futuro)
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment variables
+.env
+.env.local
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Arquivos de cache do sistema
+*.tmp
+*.temp
+
+# Arquivos pessoais/temporários
+PROMPT*.txt
+Requriments.*
+
+# Audio files grandes (opcional - você pode remover esta linha se quiser incluir o áudio)
+*.mp3
+*.wav
+*.m4a
+*.ogg
