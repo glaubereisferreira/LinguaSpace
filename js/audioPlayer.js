@@ -1,4 +1,4 @@
-// Audio Player Module - Optimized Version
+// Audio Player Module - Fixed Version with Proper Seek and Performance
 export class AudioPlayer {
     constructor(audioElementId) {
         this.audio = document.getElementById(audioElementId);
@@ -7,6 +7,7 @@ export class AudioPlayer {
             throw new Error(`Audio element with id "${audioElementId}" not found`);
         }
         
+        // Force proper audio source
         if (!this.audio.src || this.audio.src === '') {
             this.audio.src = 'preview_file.mp3';
         }
@@ -15,70 +16,134 @@ export class AudioPlayer {
         this.loopStart = 0;
         this.loopEnd = 0;
         this.eventListeners = {};
-          // OPTIMIZATION: Increased timer frequency and debouncing
-        this.highPrecisionTimer = null;
+        
+        // Performance optimization
         this.lastEmittedTime = -1;
-        this.timeUpdateThrottle = null;
-        this.timeUpdateDelay = 200; // Increased to 200ms for better INP
+        this.rafId = null;
+        this.isTracking = false;
+        
+        // Audio state
+        this.isReady = false;
+        this.isSeeking = false;
         
         this.setupEventListeners();
+        this.ensureAudioReady();
+    }
+
+    ensureAudioReady() {
+        // Force load the audio
+        this.audio.load();
         
-        if (this.audio.readyState === 0) {
-            this.audio.load();
-        }
+        // Set up ready state monitoring
+        const checkReady = () => {
+            if (this.audio.readyState >= 2) {
+                this.isReady = true;
+                console.log('✅ Audio is ready for playback');
+                this.emit('ready');
+            } else {
+                setTimeout(checkReady, 100);
+            }
+        };
+        
+        checkReady();
     }
 
     setupEventListeners() {
-        // OPTIMIZATION: Use passive listeners where possible
+        // Core audio events
+        this.audio.addEventListener('loadeddata', () => {
+            this.isReady = true;
+            console.log('Audio loaded, duration:', this.audio.duration);
+            this.emit('loadeddata');
+        });
+
+        this.audio.addEventListener('loadedmetadata', () => {
+            console.log('Metadata loaded, duration:', this.audio.duration);
+            this.emit('loadedmetadata');
+        });
+
+        this.audio.addEventListener('canplay', () => {
+            this.isReady = true;
+            this.emit('canplay');
+        });
+
         this.audio.addEventListener('play', () => {
-            this.startHighPrecisionTimer();
+            this.startTracking();
             this.emit('play');
-        }, { passive: true });
+        });
 
         this.audio.addEventListener('pause', () => {
-            this.stopHighPrecisionTimer();
+            this.stopTracking();
             this.emit('pause');
-        }, { passive: true });
+        });
 
         this.audio.addEventListener('ended', () => {
-            this.stopHighPrecisionTimer();
+            this.stopTracking();
             this.emit('ended');
-        }, { passive: true });
+        });
 
-        // OPTIMIZATION: Throttle timeupdate events
-        this.audio.addEventListener('timeupdate', () => {
-            this.throttledTimeUpdate();
-            this.handleLooping();
-        }, { passive: true });
+        this.audio.addEventListener('seeking', () => {
+            this.isSeeking = true;
+            this.emit('seeking');
+        });
+
+        this.audio.addEventListener('seeked', () => {
+            this.isSeeking = false;
+            this.emit('seeked');
+            // Force time update after seek
+            this.emitTimeUpdate();
+        });
 
         this.audio.addEventListener('error', (e) => {
             console.error('Audio error:', e);
             this.emit('error', e);
-        }, { passive: true });
+        });
 
-        this.audio.addEventListener('loadedmetadata', () => {
-            this.emit('loadedmetadata');
-        }, { passive: true });
+        // Native timeupdate as backup
+        this.audio.addEventListener('timeupdate', () => {
+            if (!this.isTracking) {
+                this.emitTimeUpdate();
+            }
+        });
+    }
 
-        this.audio.addEventListener('canplay', () => {
-            this.emit('canplay');
-        }, { passive: true });
-
-        this.audio.addEventListener('seeking', () => {
-            this.emit('seeking');
-        }, { passive: true });
-
-        this.audio.addEventListener('seeked', () => {
-            this.emit('seeked');
-        }, { passive: true });
-    }    // OPTIMIZATION: Aggressive throttle to prevent INP issues
-    throttledTimeUpdate() {
-        if (this.timeUpdateThrottle) return;
+    // Optimized tracking using requestAnimationFrame
+    startTracking() {
+        if (this.isTracking) return;
         
-        this.timeUpdateThrottle = setTimeout(() => {
+        this.isTracking = true;
+        
+        const track = () => {
+            if (!this.isTracking) return;
+            
             this.emitTimeUpdate();
-            this.timeUpdateThrottle = null;
-        }, 50); // Reduced to ~20fps for better INP
+            
+            // Handle looping
+            if (this.isLooping && this.audio.currentTime >= this.loopEnd) {
+                this.audio.currentTime = this.loopStart;
+            }
+            
+            this.rafId = requestAnimationFrame(track);
+        };
+        
+        this.rafId = requestAnimationFrame(track);
+    }
+
+    stopTracking() {
+        this.isTracking = false;
+        if (this.rafId) {
+            cancelAnimationFrame(this.rafId);
+            this.rafId = null;
+        }
+    }
+
+    emitTimeUpdate() {
+        const currentTime = this.audio.currentTime;
+        
+        // Emit only if time changed significantly (10ms threshold)
+        if (Math.abs(currentTime - this.lastEmittedTime) > 0.01) {
+            this.emit('timeupdate', currentTime);
+            this.lastEmittedTime = currentTime;
+        }
     }
 
     // Event emitter methods
@@ -101,7 +166,7 @@ export class AudioPlayer {
     }
 
     get duration() {
-        return this.audio.duration;
+        return this.audio.duration || 0;
     }
 
     get volume() {
@@ -114,9 +179,14 @@ export class AudioPlayer {
 
     async play() {
         try {
+            // Wait for audio to be ready
+            if (!this.isReady) {
+                await this.waitForReady();
+            }
+            
             await this.audio.play();
         } catch (error) {
-            console.error('🎮 [AUDIO] Error playing audio:', error);
+            console.error('Error playing audio:', error);
         }
     }
 
@@ -132,52 +202,68 @@ export class AudioPlayer {
         }
     }
 
-    isSeekable() {
-        try {
-            const seekable = this.audio.seekable;
-            return seekable.length > 0;
-        } catch (error) {
-            console.error('❌ [SEEKABLE] Error checking seekable ranges:', error);
-            return false;
-        }
-    }
-
-    // OPTIMIZATION: Remove server check for each seek
     async seek(time) {
         const numTime = Number(time);
         if (isNaN(numTime) || !isFinite(numTime)) {
-            console.error(`❌ [SEEK] Invalid time: ${time}`);
+            console.error(`Invalid seek time: ${time}`);
             return;
         }
-        
-        const duration = this.audio.duration || 0;
+
+        // Wait for audio to be ready
+        if (!this.isReady) {
+            console.log('Waiting for audio to be ready before seeking...');
+            await this.waitForReady();
+        }
+
+        const duration = this.duration;
         if (duration <= 0) {
-            console.error(`❌ [SEEK] Invalid duration: ${duration}`);
+            console.error(`Cannot seek - invalid duration: ${duration}`);
             return;
         }
-        
+
         const clampedTime = Math.max(0, Math.min(numTime, duration));
         
-        if (this.audio.readyState < 2) {
-            await new Promise(resolve => {
-                const handler = () => {
-                    this.audio.removeEventListener('loadeddata', handler);
-                    resolve();
-                };
-                this.audio.addEventListener('loadeddata', handler);
-            });
-        }
+        console.log(`Seeking to ${clampedTime.toFixed(2)}s (duration: ${duration.toFixed(2)}s)`);
         
         try {
+            // Use a more reliable seek method
+            const wasPlaying = !this.audio.paused;
+            
+            // Pause before seeking if playing
+            if (wasPlaying) {
+                this.pause();
+            }
+            
+            // Set currentTime directly
             this.audio.currentTime = clampedTime;
+            
+            // Wait a bit for the seek to complete
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // Resume playback if it was playing
+            if (wasPlaying) {
+                await this.play();
+            }
+            
+            // Force time update
+            this.emitTimeUpdate();
+            
+            console.log(`Seek completed. Current time: ${this.audio.currentTime.toFixed(2)}s`);
+            
         } catch (error) {
-            console.error('❌ [SEEK] Error during seek operation:', error);
+            console.error('Error during seek:', error);
         }
     }
 
     async jump(seconds) {
-        const newTime = this.currentTime + seconds;
-        await this.seek(Math.max(0, Math.min(newTime, this.duration)));
+        const targetTime = this.currentTime + seconds;
+        console.log(`Jumping ${seconds}s: ${this.currentTime.toFixed(2)}s -> ${targetTime.toFixed(2)}s`);
+        await this.seek(targetTime);
+    }
+
+    async seekToPercentage(percentage) {
+        const time = (percentage / 100) * this.duration;
+        await this.seek(time);
     }
 
     setPlaybackRate(rate) {
@@ -188,96 +274,40 @@ export class AudioPlayer {
         this.isLooping = true;
         this.loopStart = start;
         this.loopEnd = end;
+        console.log(`Loop set: ${start.toFixed(2)}s - ${end.toFixed(2)}s`);
     }
 
     clearLoop() {
         this.isLooping = false;
         this.loopStart = 0;
         this.loopEnd = 0;
-    }
-
-    // OPTIMIZATION: Debounce loop handling
-    handleLooping() {
-        if (this.isLooping && this.currentTime >= this.loopEnd) {
-            if (this.loopTimeout) return; // Prevent multiple triggers
-            
-            this.loopTimeout = setTimeout(() => {
-                this.pause();
-                this.seek(this.loopStart).then(() => {
-                    this.play();
-                    this.loopTimeout = null;
-                });
-            }, 100); // Reduced from 1000ms
-        }
-    }
-
-    async seekToPercentage(percentage) {
-        const time = (percentage / 100) * this.duration;
-        await this.seek(time);
+        console.log('Loop cleared');
     }
 
     waitForReady() {
         return new Promise((resolve) => {
-            if (this.audio.readyState >= 2 && this.audio.duration > 0) {
+            if (this.isReady && this.audio.readyState >= 2) {
                 resolve();
             } else {
-                this.audio.addEventListener('canplay', resolve, { once: true });
+                const handler = () => {
+                    this.audio.removeEventListener('canplay', handler);
+                    this.isReady = true;
+                    resolve();
+                };
+                this.audio.addEventListener('canplay', handler, { once: true });
+                
+                // Timeout after 5 seconds
+                setTimeout(() => {
+                    this.audio.removeEventListener('canplay', handler);
+                    resolve();
+                }, 5000);
             }
         });
     }
 
-    // OPTIMIZATION: Increased interval and added performance monitoring
-    startHighPrecisionTimer() {
-        if (this.highPrecisionTimer) return;
-        
-        let frameCount = 0;
-        let lastFrameTime = performance.now();
-        
-        this.highPrecisionTimer = setInterval(() => {
-            if (!this.audio.paused) {
-                const now = performance.now();
-                const frameDelta = now - lastFrameTime;
-                
-                // Skip frame if system is too slow
-                if (frameDelta < 200) { // Only update if less than 200ms passed
-                    this.emitTimeUpdate();
-                    this.handleLooping();
-                }
-                
-                lastFrameTime = now;
-                frameCount++;
-                
-                // Log performance warning every 100 frames
-                if (frameCount % 100 === 0 && frameDelta > 100) {
-                    console.warn(`⚠️ Performance warning: Frame took ${frameDelta.toFixed(2)}ms`);
-                }
-            }
-        }, this.timeUpdateDelay); // Using 100ms instead of 50ms
-    }
-
-    stopHighPrecisionTimer() {
-        if (this.highPrecisionTimer) {
-            clearInterval(this.highPrecisionTimer);
-            this.highPrecisionTimer = null;
-        }
-    }    emitTimeUpdate() {
-        const currentTime = this.audio.currentTime;
-        
-        // OPTIMIZATION: Much higher threshold to reduce INP impact
-        if (Math.abs(currentTime - this.lastEmittedTime) > 0.1) { // Increased to 100ms threshold
-            this.emit('timeupdate', currentTime);
-            this.lastEmittedTime = currentTime;
-        }
-    }
-
-    // Cleanup method
+    // Cleanup
     destroy() {
-        this.stopHighPrecisionTimer();
-        if (this.timeUpdateThrottle) {
-            clearTimeout(this.timeUpdateThrottle);
-        }
-        if (this.loopTimeout) {
-            clearTimeout(this.loopTimeout);
-        }
+        this.stopTracking();
+        this.eventListeners = {};
     }
 }
