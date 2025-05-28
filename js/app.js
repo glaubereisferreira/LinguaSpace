@@ -145,9 +145,7 @@ class LinguaSpaceApp {
                 ]
             }]
         };
-    }
-
-    setupEventListeners() {
+    }    setupEventListeners() {
         // CRITICAL FIX 6: Remove excessive throttling for audio updates
         this.audioPlayer.on('timeupdate', (currentTime) => {
             // Use only high-frequency highlighter if active
@@ -185,6 +183,28 @@ class LinguaSpaceApp {
         this.audioPlayer.on('error', (error) => {
             console.error('Audio player error:', error);
             this.showError('Audio playback error. Please check the audio file.');
+        });
+
+        // CRITICAL FIX 7: Add missing play-pause event listener connection
+        this.uiController.on('play-pause', () => {
+            console.log('🎮 [APP] Received play-pause event from UI');
+            this.audioPlayer.togglePlayPause();
+        });
+
+        // UI controller events for other controls
+        this.uiController.on('jump', async (seconds) => {
+            console.log(`App received jump: ${seconds}s`);
+            await this.audioPlayer.jump(seconds);
+        });
+
+        this.uiController.on('speed-change', (speed) => {
+            this.audioPlayer.setPlaybackRate(speed);
+        });
+
+        this.uiController.on('seek-percentage', async (percentage) => {
+            console.log(`App received seek-percentage: ${percentage}%`);
+            const newTime = (percentage / 100) * this.audioPlayer.duration;
+            await this.audioPlayer.seek(newTime);
         });
 
         // Progress bar click handling
