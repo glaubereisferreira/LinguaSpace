@@ -15,11 +15,11 @@ export class AudioPlayer {
         this.loopStart = 0;
         this.loopEnd = 0;
         this.eventListeners = {};
-        
-        // OPTIMIZATION: Reduced timer frequency and debouncing        this.highPrecisionTimer = null;
+          // OPTIMIZATION: Increased timer frequency and debouncing
+        this.highPrecisionTimer = null;
         this.lastEmittedTime = -1;
         this.timeUpdateThrottle = null;
-        this.timeUpdateDelay = 50; // CRITICAL FIX: Reduced from 100ms to 50ms for short words
+        this.timeUpdateDelay = 200; // Increased to 200ms for better INP
         
         this.setupEventListeners();
         
@@ -71,14 +71,14 @@ export class AudioPlayer {
         this.audio.addEventListener('seeked', () => {
             this.emit('seeked');
         }, { passive: true });
-    }    // CRITICAL FIX: Faster throttle for short words
+    }    // OPTIMIZATION: Aggressive throttle to prevent INP issues
     throttledTimeUpdate() {
         if (this.timeUpdateThrottle) return;
         
         this.timeUpdateThrottle = setTimeout(() => {
             this.emitTimeUpdate();
             this.timeUpdateThrottle = null;
-        }, 25); // CRITICAL FIX: Reduced from 16ms to 25ms (~40fps)
+        }, 50); // Reduced to ~20fps for better INP
     }
 
     // Event emitter methods
@@ -263,8 +263,8 @@ export class AudioPlayer {
     }    emitTimeUpdate() {
         const currentTime = this.audio.currentTime;
         
-        // CRITICAL FIX: Reduce threshold for short words highlighting
-        if (Math.abs(currentTime - this.lastEmittedTime) > 0.025) { // Reduced from 0.05 to 0.025 (25ms)
+        // OPTIMIZATION: Much higher threshold to reduce INP impact
+        if (Math.abs(currentTime - this.lastEmittedTime) > 0.1) { // Increased to 100ms threshold
             this.emit('timeupdate', currentTime);
             this.lastEmittedTime = currentTime;
         }

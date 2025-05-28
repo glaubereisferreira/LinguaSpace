@@ -10,9 +10,10 @@ export class HighFrequencyHighlighter {    constructor(container, audioPlayer) {
         this.lastTime = -1;
         this.frameCount = 0;
         this.isActive = false;
-          // Optimized tracking - single system only
+        
+        // Optimized tracking - single system only
         this.trackingIntervalId = null;
-        this.optimizedUpdateRate = 33; // CRITICAL FIX: Increased to ~30 FPS (33ms) for short words
+        this.optimizedUpdateRate = 67; // ~15 FPS (67ms)
     }    async init(transcript) {
         // Build cache
         this.wordCache.buildCache(transcript);
@@ -71,17 +72,18 @@ export class HighFrequencyHighlighter {    constructor(container, audioPlayer) {
             clearInterval(this.trackingIntervalId);
             this.trackingIntervalId = null;
         }
-    }    update() {
+    }update() {
         const currentTime = this.audioPlayer.currentTime;
         
-        // CRITICAL FIX: Reduced threshold for short words (was 0.001)
-        if (Math.abs(currentTime - this.lastTime) < 0.01) { // 10ms threshold for short words
+        // Evita atualizações desnecessárias (threshold de 1ms)
+        if (Math.abs(currentTime - this.lastTime) < 0.001) {
             return;
         }
-          this.lastTime = currentTime;
         
-        // CRITICAL FIX: Use optimized lookup for short words
-        const wordData = this.wordCache.findWordAtTimeOptimized(currentTime);
+        this.lastTime = currentTime;
+        
+        // Busca palavra no cache otimizado
+        const wordData = this.wordCache.findWordAtTime(currentTime);
         
         if (wordData && wordData.index !== this.currentIndex) {
             // Remove highlight anterior
