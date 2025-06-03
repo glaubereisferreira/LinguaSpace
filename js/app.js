@@ -17,7 +17,9 @@ class LinguaSpaceApp {
         this.isInitialized = false;
         
         // OPTIMIZATION: Flags to control which systems are active
-        this.useHighFrequencyHighlighter = false; // Disable by default
+        // Enable the high-frequency highlighter by default to improve
+        // synchronization of very short words without heavy CPU usage.
+        this.useHighFrequencyHighlighter = true;
         this.performanceMode = true; // Enable performance optimizations
         
         this.init();

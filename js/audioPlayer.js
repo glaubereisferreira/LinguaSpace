@@ -11,6 +11,11 @@ export class AudioPlayer {
         if (!this.audio.src || this.audio.src === '') {
             this.audio.src = 'preview_file.mp3';
         }
+
+        // Preload audio via fetch to ensure seeking works even if the server
+        // does not support HTTP range requests. This creates an Object URL so
+        // all seeking happens against a fully buffered file.
+        this.preloadAudio();
         
         this.isLooping = false;
         this.loopStart = 0;
@@ -28,6 +33,23 @@ export class AudioPlayer {
         
         this.setupEventListeners();
         this.ensureAudioReady();
+    }
+
+    async preloadAudio() {
+        const src = this.audio.src;
+        if (!src) return;
+        try {
+            const response = await fetch(src);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch audio: ${response.status}`);
+            }
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            this.audio.src = url;
+            this.audio.load();
+        } catch (error) {
+            console.warn('Audio preloading failed:', error);
+        }
     }
 
     ensureAudioReady() {
