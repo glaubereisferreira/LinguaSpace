@@ -1,4 +1,4 @@
-// Main Application Entry Point - Optimized Version with Critical Fixes
+// Main Application Entry Point - Optimized Version
 import { AudioPlayer } from './audioPlayer.js';
 import { TranscriptRenderer } from './transcriptRenderer.js';
 import { HighFrequencyHighlighter } from './highFrequencyHighlighter.js';
@@ -16,44 +16,38 @@ class LinguaSpaceApp {
         this.transcriptData = null;
         this.isInitialized = false;
         
-        // CRITICAL FIX 1: ENABLE HIGH FREQUENCY HIGHLIGHTER FOR SHORT WORDS
-        this.useHighFrequencyHighlighter = true; // ← CRITICAL CHANGE
-        this.performanceMode = true;
+        // OPTIMIZATION: Flags to control which systems are active
+        // Enable the high-frequency highlighter by default to improve
+        // synchronization of very short words without heavy CPU usage.
+        this.useHighFrequencyHighlighter = true;
+        this.performanceMode = true; // Enable performance optimizations
         
         this.init();
     }
 
     async init() {
         try {
+            // Show loading overlay
             this.showLoadingOverlay(true);
             
+            // Initialize core components
             this.dictionary = new Dictionary();
             this.uiController = new UIController();
             
-            // CRITICAL FIX 2: Add fallback system for missing files
+            // Load transcript data
             await this.loadTranscriptData();
             
+            // Initialize audio player
             this.audioPlayer = new AudioPlayer('audio-player');
             
-            // CRITICAL FIX 3: Disable duplicate TranscriptRenderer when using HighFrequency
-            if (this.useHighFrequencyHighlighter) {
-                // Create minimal renderer only for structure
-                this.transcriptRenderer = new TranscriptRenderer(
-                    this.transcriptData,
-                    this.audioPlayer,
-                    this.dictionary
-                );
-                // Disable old renderer's highlight update to prevent conflicts
-                this.transcriptRenderer.updateHighlight = () => {}; // Noop
-            } else {
-                this.transcriptRenderer = new TranscriptRenderer(
-                    this.transcriptData,
-                    this.audioPlayer,
-                    this.dictionary
-                );
-            }
+            // Initialize transcript renderer (original system)
+            this.transcriptRenderer = new TranscriptRenderer(
+                this.transcriptData,
+                this.audioPlayer,
+                this.dictionary
+            );
             
-            // Initialize high-frequency highlighter
+            // OPTIMIZATION: Only initialize high-frequency highlighter if needed
             if (this.useHighFrequencyHighlighter) {
                 const transcriptContainer = document.getElementById('transcript-content');
                 this.highFrequencyHighlighter = new HighFrequencyHighlighter(
@@ -62,46 +56,46 @@ class LinguaSpaceApp {
                 );
             }
             
+            // Setup event listeners
             this.setupEventListeners();
+            
+            // Render transcript with original system
             await this.transcriptRenderer.render();
             
-            // Initialize high-frequency highlighter after render
+            // OPTIMIZATION: Only initialize if enabled
             if (this.useHighFrequencyHighlighter && this.highFrequencyHighlighter) {
                 await this.highFrequencyHighlighter.init(this.transcriptData);
             }
             
+            // Update UI
             this.updateWordCount();
+            
+            // Setup debug commands
             this.setupDebugCommands();
+            
+            // Hide loading overlay
             this.showLoadingOverlay(false);
             
             this.isInitialized = true;
-            console.log('🚀 App initialized with High Frequency Highlighter for short words');
+            
+            // OPTIMIZATION: Log performance metrics
+            console.log('🚀 App initialized successfully');
+            if (this.performanceMode) {
+                console.log('⚡ Performance mode enabled');
+            }
             
         } catch (error) {
             console.error('Failed to initialize LinguaSpace:', error);
-            this.showError(`Failed to load: ${error.message}`);
+            this.showError('Failed to load the podcast. Please check the file paths.');
         }
     }
 
-    // CRITICAL FIX 4: Better error handling for file loading
     async loadTranscriptData() {
         try {
-            // Try to load main file
-            let response = await fetch('Books_Summary.json');
-            
-            // If failed, try alternative file
+            const response = await fetch('Books_Summary.json');
             if (!response.ok) {
-                console.warn('Books_Summary.json not found, trying fallback...');
-                response = await fetch('transcript.json');
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
-            // If still failed, use demo data
-            if (!response.ok) {
-                console.warn('No transcript file found, using demo data');
-                this.transcriptData = this.getDemoTranscript();
-                return;
-            }
-            
             this.transcriptData = await response.json();
             
             if (!this.transcriptData.segments || !Array.isArray(this.transcriptData.segments)) {
@@ -111,57 +105,33 @@ class LinguaSpaceApp {
             console.log(`Loaded transcript with ${this.transcriptData.segments.length} segments`);
         } catch (error) {
             console.error('Error loading transcript:', error);
-            this.transcriptData = this.getDemoTranscript();
+            throw error;
         }
     }
 
-    // CRITICAL FIX 5: Demo data to prevent total failure
-    getDemoTranscript() {
-        return {
-            segments: [{
-                words: [
-                    { type: 'word', text: 'Welcome', start: 0.0, end: 0.5 },
-                    { type: 'spacing', text: ' ' },
-                    { type: 'word', text: 'to', start: 0.5, end: 0.6 }, // Short word!
-                    { type: 'spacing', text: ' ' },
-                    { type: 'word', text: 'LinguaSpace', start: 0.6, end: 1.2 },
-                    { type: 'spacing', text: '. ' },
-                    { type: 'word', text: 'This', start: 1.3, end: 1.5 },
-                    { type: 'spacing', text: ' ' },
-                    { type: 'word', text: 'is', start: 1.5, end: 1.6 }, // Short word!
-                    { type: 'spacing', text: ' ' },
-                    { type: 'word', text: 'a', start: 1.6, end: 1.65 }, // Short word!
-                    { type: 'spacing', text: ' ' },
-                    { type: 'word', text: 'demo', start: 1.65, end: 2.0 },
-                    { type: 'spacing', text: '. ' },
-                    { type: 'word', text: 'It', start: 2.1, end: 2.2 }, // Short word!
-                    { type: 'spacing', text: ' ' },
-                    { type: 'word', text: 'includes', start: 2.2, end: 2.8 },
-                    { type: 'spacing', text: ' ' },
-                    { type: 'word', text: 'short', start: 2.8, end: 3.1 },
-                    { type: 'spacing', text: ' ' },
-                    { type: 'word', text: 'words', start: 3.1, end: 3.5 },
-                    { type: 'spacing', text: '.' }
-                ]
-            }]
-        };
-    }    setupEventListeners() {
-        // CRITICAL FIX 6: Remove excessive throttling for audio updates
+    setupEventListeners() {
+        // OPTIMIZATION: Debounced timeupdate handler
+        let timeUpdateDebounce = null;
+        
         this.audioPlayer.on('timeupdate', (currentTime) => {
-            // Use only high-frequency highlighter if active
-            if (this.useHighFrequencyHighlighter && this.highFrequencyHighlighter) {
-                // High-frequency highlighter has its own optimization
-                // Don't do anything here to avoid conflicts
-            } else {
-                this.transcriptRenderer.updateHighlight(currentTime);
+            // Clear existing timeout
+            if (timeUpdateDebounce) {
+                clearTimeout(timeUpdateDebounce);
             }
             
-            // UI updates can continue with throttle
-            this.uiController.updateProgress(currentTime, this.audioPlayer.duration);
-        });
-
-        this.audioPlayer.on('durationchange', (duration) => {
-            this.uiController.updateDuration(duration);
+            // Debounce updates to prevent excessive rendering
+            timeUpdateDebounce = setTimeout(() => {
+                // Use only one highlighting system at a time
+                if (this.useHighFrequencyHighlighter && this.highFrequencyHighlighter) {
+                    // High-frequency highlighter handles its own optimization
+                } else {
+                    // Use optimized transcript renderer
+                    this.transcriptRenderer.updateHighlight(currentTime);
+                }
+                
+                // Update UI progress less frequently
+                this.uiController.updateProgress(currentTime, this.audioPlayer.duration);
+            }, 16); // ~60fps max
         });
 
         this.audioPlayer.on('play', () => {
@@ -172,28 +142,28 @@ class LinguaSpaceApp {
             this.uiController.updatePlayButton(false);
         });
 
-        this.audioPlayer.on('loadstart', () => {
-            this.uiController.showLoadingState();
+        this.audioPlayer.on('loadedmetadata', () => {
+            this.uiController.updateDuration(this.audioPlayer.duration);
         });
 
-        this.audioPlayer.on('loadeddata', () => {
-            this.uiController.hideLoadingState();
-        });
-
-        this.audioPlayer.on('error', (error) => {
-            console.error('Audio player error:', error);
-            this.showError('Audio playback error. Please check the audio file.');
-        });
-
-        // CRITICAL FIX 7: Add missing play-pause event listener connection
+        // UI controller events
         this.uiController.on('play-pause', () => {
             console.log('🎮 [APP] Received play-pause event from UI');
             this.audioPlayer.togglePlayPause();
         });
 
-        // UI controller events for other controls
+        this.uiController.on('seek', async (time) => {
+            console.log(`App received UI seek: time=${time}, type=${typeof time}`);
+            await this.audioPlayer.seek(time);
+        });
+
+        this.uiController.on('seek-percentage', async (percentage) => {
+            console.log(`App received seek-percentage: ${percentage}%, type=${typeof percentage}`);
+            await this.audioPlayer.seekToPercentage(percentage);
+        });
+
         this.uiController.on('jump', async (seconds) => {
-            console.log(`App received jump: ${seconds}s`);
+            console.log(`App received jump: ${seconds}s, type=${typeof seconds}`);
             await this.audioPlayer.jump(seconds);
         });
 
@@ -201,130 +171,256 @@ class LinguaSpaceApp {
             this.audioPlayer.setPlaybackRate(speed);
         });
 
-        this.uiController.on('seek-percentage', async (percentage) => {
-            console.log(`App received seek-percentage: ${percentage}%`);
-            const newTime = (percentage / 100) * this.audioPlayer.duration;
-            await this.audioPlayer.seek(newTime);
+        this.uiController.on('loop-toggle', (isLooping) => {
+            this.transcriptRenderer.setLooping(isLooping);
         });
 
-        // Progress bar click handling
-        const progressContainer = document.querySelector('.progress-container');
-        if (progressContainer) {
-            progressContainer.addEventListener('click', (e) => {
-                const rect = progressContainer.getBoundingClientRect();
-                const percent = (e.clientX - rect.left) / rect.width;
-                const newTime = percent * this.audioPlayer.duration;
-                this.audioPlayer.currentTime = newTime;
-            });
-        }
+        this.uiController.on('dictionary-toggle', () => {
+            this.toggleDictionary();
+        });
+
+        // Transcript renderer events
+        this.transcriptRenderer.on('word-click', async (word, time) => {
+            console.log(`App received word-click: word="${word.text}", time=${time}, type=${typeof time}`);
+            await this.audioPlayer.seek(time);
+        });
+
+        this.transcriptRenderer.on('word-save', (word, color) => {
+            this.dictionary.addWord(word, color);
+            this.updateDictionaryDisplay();
+        });
+
+        this.transcriptRenderer.on('word-remove', (word) => {
+            this.dictionary.removeWord(word);
+            this.updateDictionaryDisplay();
+        });
+
+        // OPTIMIZATION: Debounced resize handler
+        let resizeTimeout = null;
+        window.addEventListener('resize', () => {
+            if (resizeTimeout) {
+                clearTimeout(resizeTimeout);
+            }
+            resizeTimeout = setTimeout(() => {
+                this.transcriptRenderer.handleResize();
+            }, 250); // Wait 250ms after resize ends
+        }, { passive: true });
+
+        // Prevent context menu on right-click for our custom implementation
+        document.addEventListener('contextmenu', (e) => {
+            if (e.target.classList.contains('word')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Hide context menu when clicking elsewhere
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.context-menu')) {
+                this.uiController.hideContextMenu();
+            }
+        }, { passive: true });
     }
 
     updateWordCount() {
-        if (!this.transcriptData || !this.transcriptData.segments) return;
+        if (!this.transcriptData) return;
         
-        let wordCount = 0;
-        this.transcriptData.segments.forEach(segment => {
-            if (segment.words) {
-                wordCount += segment.words.filter(word => word.type === 'word').length;
-            }
-        });
+        // OPTIMIZATION: Cache word count
+        if (this._cachedWordCount === undefined) {
+            let totalWords = 0;
+            this.transcriptData.segments.forEach(segment => {
+                segment.words.forEach(word => {
+                    if (word.type === 'word') {
+                        totalWords++;
+                    }
+                });
+            });
+            this._cachedWordCount = totalWords;
+        }
         
         const wordCountElement = document.getElementById('word-count');
         if (wordCountElement) {
-            wordCountElement.textContent = `${wordCount.toLocaleString()} words`;
+            wordCountElement.textContent = `${this._cachedWordCount} words`;
         }
     }
 
-    setupDebugCommands() {
-        // Performance monitor toggle
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.shiftKey && e.key === 'P') {
-                e.preventDefault();
-                if (window.performanceMonitor) {
-                    window.performanceMonitor.toggleDashboard();
-                }
+    toggleDictionary() {
+        const sidebar = document.getElementById('dictionary-sidebar');
+        const isHidden = sidebar.classList.contains('hidden');
+        
+        if (isHidden) {
+            sidebar.classList.remove('hidden');
+            this.updateDictionaryDisplay();
+        } else {
+            sidebar.classList.add('hidden');
+        }
+    }
+
+    // OPTIMIZATION: Batch DOM updates for dictionary
+    updateDictionaryDisplay() {
+        requestAnimationFrame(() => {
+            const savedWords = this.dictionary.getSavedWords();
+            const statsElement = document.getElementById('dictionary-stats');
+            const listElement = document.getElementById('saved-words-list');
+            
+            if (statsElement) {
+                const totalWords = Object.keys(savedWords).length;
+                
+                statsElement.innerHTML = `
+                    <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem;">
+                        ${totalWords}
+                    </div>
+                    <div style="opacity: 0.9;">Words Saved</div>
+                `;
+            }
+            
+            if (listElement) {
+                const sortedWords = Object.entries(savedWords)
+                    .sort(([a], [b]) => a.localeCompare(b));
+                
+                // Create HTML in one go
+                const html = sortedWords.map(([word, data]) => `
+                    <div class="saved-word-item" style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 0.5rem;
+                        margin-bottom: 0.5rem;
+                        background: rgba(248, 250, 252, 0.8);
+                        border-radius: 8px;
+                        border-left: 4px solid ${data.color};
+                    ">
+                        <span style="font-weight: 500; color: ${data.color};">${word}</span>
+                        <button 
+                            class="remove-saved-word" 
+                            data-word="${word}"
+                            style="
+                                background: none;
+                                border: none;
+                                color: #6b7280;
+                                cursor: pointer;
+                                padding: 0.25rem;
+                                border-radius: 4px;
+                                font-size: 0.75rem;
+                            "
+                            title="Remove word"
+                        >×</button>
+                    </div>
+                `).join('');
+                
+                listElement.innerHTML = html;
+                
+                // Use event delegation for remove buttons
+                listElement.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('remove-saved-word')) {
+                        const word = e.target.dataset.word;
+                        this.dictionary.removeWord(word);
+                        this.updateDictionaryDisplay();
+                        this.transcriptRenderer.updateWordColors();
+                    }
+                }, { once: true });
             }
         });
+    }
 
-        // Debug info
-        window.app = this;
-        window.debugInfo = () => {
-            console.log('LinguaSpace Debug Info:', {
-                isInitialized: this.isInitialized,
-                useHighFrequencyHighlighter: this.useHighFrequencyHighlighter,
-                transcriptSegments: this.transcriptData?.segments?.length || 0,
-                audioPlayer: !!this.audioPlayer,
-                transcriptRenderer: !!this.transcriptRenderer,
-                highFrequencyHighlighter: !!this.highFrequencyHighlighter
-            });
+    setupDebugCommands() {
+        // Global debug commands for testing
+        window.linguaDebug = {
+            shortWords: () => {
+                if (this.highFrequencyHighlighter) {
+                    this.highFrequencyHighlighter.debugShortWords();
+                } else {
+                    console.warn('High-frequency highlighter is disabled');
+                }
+            },
+            
+            enableHighFrequency: () => {
+                this.useHighFrequencyHighlighter = true;
+                console.log('High-frequency highlighting enabled (requires reload)');
+            },
+            
+            disableHighFrequency: () => {
+                this.useHighFrequencyHighlighter = false;
+                console.log('High-frequency highlighting disabled');
+            },
+            
+            performanceMode: (enabled) => {
+                this.performanceMode = enabled;
+                console.log(`Performance mode ${enabled ? 'enabled' : 'disabled'}`);
+            },
+            
+            stats: () => {
+                const stats = {
+                    wordCount: this._cachedWordCount || 0,
+                    savedWords: Object.keys(this.dictionary.getSavedWords()).length,
+                    performanceMode: this.performanceMode,
+                    highFrequencyEnabled: this.useHighFrequencyHighlighter
+                };
+                console.table(stats);
+                return stats;
+            },
+            
+            testSeek: (time) => {
+                this.audioPlayer.seek(time);
+            }
         };
     }
 
     showLoadingOverlay(show) {
         const overlay = document.getElementById('loading-overlay');
         if (overlay) {
-            overlay.style.display = show ? 'flex' : 'none';
+            if (show) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
         }
     }
 
     showError(message) {
-        // Create error overlay if it doesn't exist
-        let errorOverlay = document.getElementById('error-overlay');
-        if (!errorOverlay) {
-            errorOverlay = document.createElement('div');
-            errorOverlay.id = 'error-overlay';
-            errorOverlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.8);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-                color: white;
-                font-family: Arial, sans-serif;
-            `;
-            
-            const errorContent = document.createElement('div');
-            errorContent.style.cssText = `
-                background: #ff4444;
-                padding: 20px;
-                border-radius: 8px;
-                max-width: 500px;
-                text-align: center;
-            `;
-            errorContent.innerHTML = `
-                <h3>Error</h3>
-                <p>${message}</p>
-                <button onclick="this.parentElement.parentElement.remove()" style="
-                    background: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    margin-top: 10px;
-                ">Close</button>
-            `;
-            
-            errorOverlay.appendChild(errorContent);
-            document.body.appendChild(errorOverlay);
-        }
-        
         this.showLoadingOverlay(false);
+        const loadingMessage = document.getElementById('loading-message');
+        if (loadingMessage) {
+            loadingMessage.innerHTML = `
+                <div style="color: #ef4444; text-align: center;">
+                    <div style="font-size: 2rem; margin-bottom: 1rem;">⚠️</div>
+                    <h3 style="margin-bottom: 0.5rem;">Error Loading Podcast</h3>
+                    <p>${message}</p>
+                    <button onclick="window.location.reload()" style="
+                        margin-top: 1rem;
+                        padding: 0.5rem 1rem;
+                        background: #ef4444;
+                        color: white;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                    ">Reload Page</button>
+                </div>
+            `;
+        }
+    }
+
+    // OPTIMIZATION: Cleanup method
+    destroy() {
+        if (this.audioPlayer) {
+            this.audioPlayer.destroy();
+        }
+        if (this.transcriptRenderer) {
+            this.transcriptRenderer.destroy();
+        }
     }
 }
 
-// Initialize app when DOM is ready
+// Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new LinguaSpaceApp();
+    window.linguaSpace = new LinguaSpaceApp();
 });
 
-// Initialize performance monitor
-if (window.PerformanceMonitor) {
-    window.performanceMonitor = new PerformanceMonitor();
-}
+// OPTIMIZATION: Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (window.linguaSpace) {
+        window.linguaSpace.destroy();
+    }
+});
 
+// Export for potential external use
 export { LinguaSpaceApp };
