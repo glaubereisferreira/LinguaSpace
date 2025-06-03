@@ -231,7 +231,7 @@ export class AudioPlayer {
             return;
         }
 
-        // Wait for audio to be ready
+        // Ensure the audio element is ready before attempting to seek
         if (!this.isReady) {
             console.log('Waiting for audio to be ready before seeking...');
             await this.waitForReady();
@@ -243,38 +243,69 @@ export class AudioPlayer {
             return;
         }
 
-        const clampedTime = Math.max(0, Math.min(numTime, duration));
-        
-        console.log(`Seeking to ${clampedTime.toFixed(2)}s (duration: ${duration.toFixed(2)}s)`);
-        
+        const target = Math.max(0, Math.min(numTime, duration));
+
+        console.log(`Seeking to ${target.toFixed(2)}s (duration: ${duration.toFixed(2)}s)`);
+
         try {
-            // Use a more reliable seek method
             const wasPlaying = !this.audio.paused;
-            
-            // Pause before seeking if playing
+
+            // Pause playback while seeking to avoid glitches
             if (wasPlaying) {
                 this.pause();
             }
-            
-            // Set currentTime directly
-            this.audio.currentTime = clampedTime;
-            
-            // Wait a bit for the seek to complete
-            await new Promise(resolve => setTimeout(resolve, 50));
-            
-            // Resume playback if it was playing
+
+            // Use fastSeek when available for better accuracy
+            if (typeof this.audio.fastSeek === 'function') {
+                this.audio.fastSeek(target);
+            } else {
+                this.audio.currentTime = target;
+            }
+
+            // Wait until the audio element reports the correct time
+            await this.waitForSeekCompletion(target);
+
+            // Resume playback if it was previously playing
             if (wasPlaying) {
                 await this.play();
             }
-            
-            // Force time update
+
             this.emitTimeUpdate();
-            
+
             console.log(`Seek completed. Current time: ${this.audio.currentTime.toFixed(2)}s`);
-            
         } catch (error) {
             console.error('Error during seek:', error);
         }
+    }
+
+    waitForSeekCompletion(targetTime) {
+        return new Promise((resolve, reject) => {
+            const maxAttempts = 20;
+            let attempts = 0;
+
+            const onSeeked = () => check(true);
+
+            const check = (fromEvent = false) => {
+                const diff = Math.abs(this.audio.currentTime - targetTime);
+                if (diff < 0.05) {
+                    cleanup();
+                    resolve();
+                } else if (attempts >= maxAttempts) {
+                    cleanup();
+                    reject(new Error('Seek timeout'));
+                } else if (!fromEvent) {
+                    attempts++;
+                    setTimeout(check, 100);
+                }
+            };
+
+            const cleanup = () => {
+                this.audio.removeEventListener('seeked', onSeeked);
+            };
+
+            this.audio.addEventListener('seeked', onSeeked);
+            check();
+        });
     }
 
     async jump(seconds) {
